@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build
+        shell: bash
+        run: |
+          dotnet build BluetoothSwitcher.csproj -c Release -p:AssemblyVersion="${GITHUB_REF_NAME#v}.0"
+          mv bin/Release/net48/*.pdb .
+
+      - name: Zip
+        shell: pwsh
+        run: |
+            Compress-Archive bin/Release/net48/* -DestinationPath BluetoothSwitcher.zip
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./*.pdb
+            ./BluetoothSwitcher.zip
+
